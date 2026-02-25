@@ -36,25 +36,6 @@ export default function App() {
     if (error) alert(error.message);
   };
 
-  const autoLogin = async (id: 1 | 2) => {
-    const devEmail = `dev${id}@example.com`;
-    const devPass = 'password123';
-
-    // Try login
-    const { error: loginError } = await supabase.auth.signInWithPassword({ email: devEmail, password: devPass });
-
-    if (loginError && loginError.message.includes('Invalid login')) {
-      // Try signup if login fails
-      const { error: signupError } = await supabase.auth.signUp({
-        email: devEmail,
-        password: devPass,
-        options: { data: { name: `Tester ${id}` } }
-      });
-      if (signupError) return alert(signupError.message);
-      alert(`Account created for ${devEmail}! Please click Login again.`);
-    }
-  };
-
   if (view === 'login') {
     return (
       <div style={styles.loginContainer}>
@@ -67,14 +48,12 @@ export default function App() {
             <button style={styles.primaryButton} onClick={handleSignIn}>Login</button>
             <button style={styles.secondaryButton} onClick={handleSignUp}>Sign Up</button>
           </div>
-
-          <div style={{ marginTop: '30px', borderTop: '1px solid #313d45', paddingTop: '20px' }}>
-            <p style={{ ...styles.subtitle, marginBottom: '15px' }}>Development Tools</p>
-            <div style={styles.buttonGroup}>
-              <button style={styles.secondaryButton} onClick={() => autoLogin(1)}>Auto Login 1</button>
-              <button style={styles.secondaryButton} onClick={() => autoLogin(2)}>Auto Login 2</button>
-            </div>
-          </div>
+          <button
+            style={{ ...styles.secondaryButton, width: '100%', marginTop: '15px', color: '#8696a0', borderColor: '#313d45' }}
+            onClick={() => { setEmail('demo@example.com'); setPassword('demo123456'); setTimeout(handleSignIn, 100); }}
+          >
+            Try Demo Login
+          </button>
         </div>
       </div>
     );

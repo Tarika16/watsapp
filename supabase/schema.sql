@@ -83,11 +83,28 @@ INSERT INTO public.chats (id, name, is_group) VALUES ('00000000-0000-0000-0000-0
 -- Trigger for profile creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
+DECLARE
+  bot_chat_id UUID;
 BEGIN
+  -- 1. Create user profile
   INSERT INTO public.users (id, name, email, avatar_url)
   VALUES (new.id, new.raw_user_meta_data->>'name', new.email, new.raw_user_meta_data->>'avatar_url');
-  -- Add to global lobby
+  
+  -- 2. Add to Global Lobby
   INSERT INTO public.chat_members (chat_id, user_id) VALUES ('00000000-0000-0000-0000-000000000000', new.id);
+
+  -- 3. Create a Starter Chat (WhatsApp Bot)
+  INSERT INTO public.chats (name, is_group) 
+  VALUES ('WhatsApp Bot', false)
+  RETURNING id INTO bot_chat_id;
+
+  INSERT INTO public.chat_members (chat_id, user_id) 
+  VALUES (bot_chat_id, new.id);
+
+  -- 4. Send Welcome Message
+  INSERT INTO public.messages (chat_id, sender_id, content)
+  VALUES (bot_chat_id, new.id, 'Welcome to WhatsApp Clone! This is your personal sandbox. You can also join the Global Lobby to talk to others.');
+
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
