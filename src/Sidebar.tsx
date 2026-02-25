@@ -150,7 +150,7 @@ export default function Sidebar({ onSelectChat, selectedChatId, user }: SidebarP
                     <h2 style={styles.headerTitle}>{showSearch ? "Search Users" : (activeTab.charAt(0).toUpperCase() + activeTab.slice(1))}</h2>
                     <div style={styles.headerActions}>
                         <button style={styles.iconBtn} onClick={() => { setShowSearch(!showSearch); if (showSearch) setSearch(''); }}>{showSearch ? "✕" : "+"}</button>
-                        <button style={styles.iconBtn} title="Logout" onClick={() => supabase.auth.signOut()}>Logout</button>
+                        <button style={styles.iconBtn} title="Logout" onClick={() => supabase.auth.signOut()}>⏻</button>
                     </div>
                 </div>
 
