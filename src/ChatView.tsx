@@ -113,7 +113,7 @@ export default function ChatView({ chat, user }: ChatViewProps) {
                     <div style={styles.callCard}>
                         <img src={chat.avatar_url || "https://ui-avatars.com/api/?name=" + chat.name} style={styles.callAvatar} alt="" />
                         <h2>{chat.name}</h2>
-                        <p>Calling...</p>
+                        <p>{callType.charAt(0).toUpperCase() + callType.slice(1)} Calling...</p>
                         <div style={styles.callActions}>
                             <button style={styles.endCallBtn} onClick={() => setShowCall(false)}>End Call</button>
                         </div>
