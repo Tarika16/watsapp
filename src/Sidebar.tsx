@@ -147,9 +147,9 @@ export default function Sidebar({ onSelectChat, selectedChatId, user }: SidebarP
 
             <div style={styles.contentArea}>
                 <div style={styles.header}>
-                    <h2 style={styles.headerTitle}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h2>
+                    <h2 style={styles.headerTitle}>{showSearch ? "Search Users" : (activeTab.charAt(0).toUpperCase() + activeTab.slice(1))}</h2>
                     <div style={styles.headerActions}>
-                        <button style={styles.iconBtn} onClick={() => setShowSearch(!showSearch)}>+</button>
+                        <button style={styles.iconBtn} onClick={() => { setShowSearch(!showSearch); if (showSearch) setSearch(''); }}>{showSearch ? "✕" : "+"}</button>
                         <button style={styles.iconBtn} title="Logout" onClick={() => supabase.auth.signOut()}>Logout</button>
                     </div>
                 </div>
@@ -169,6 +169,7 @@ export default function Sidebar({ onSelectChat, selectedChatId, user }: SidebarP
                 <div style={styles.chatList}>
                     {showSearch ? (
                         <div>
+                            {users.length === 0 && search.trim() !== "" && <div style={styles.emptyTab}>No users found.</div>}
                             {users.map(u => (
                                 <div key={u.id} style={styles.chatItem} onClick={() => startNewChat(u)}>
                                     <img src={u.avatar_url || "https://ui-avatars.com/api/?name=" + (u.name || 'U')} style={styles.chatAvatar} alt="" />
