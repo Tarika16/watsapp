@@ -48,28 +48,49 @@ export default function Sidebar({ onSelectChat, selectedChatId, user }: SidebarP
         if (data) setChats(data);
     };
 
-    const toggleSearch = async () => {
-        const newShowSearch = !showSearch;
-        setShowSearch(newShowSearch);
-        if (newShowSearch) {
-            setSearch('');
-            // Pre-fetch some users to show immediately
-            const { data } = await supabase
-                .from('users')
-                .select('*')
-                .limit(20);
-            if (data) setUsers(data.filter(u => u.id !== user.id));
-        } else {
-            setUsers([]);
+    const openPersonalChat = async () => {
+        // 1. Check for existing self-chat
+        try {
+            const { data: existingChat } = await supabase
+                .from('chats')
+                .select('id, name, is_group, chat_members!inner(user_id)')
+                .eq('is_group', false)
+                .eq('name', 'Me (You)')
+                .eq('chat_members.user_id', user.id)
+                .maybeSingle();
+
+            if (existingChat) {
+                onSelectChat(existingChat);
+                return;
+            }
+
+            // 2. Create new self-chat if none exists
+            const { data: chatData, error: chatError } = await supabase
+                .from('chats')
+                .insert([{ name: 'Me (You)', is_group: false }])
+                .select()
+                .single();
+
+            if (chatError) throw chatError;
+
+            const { error: memberError } = await supabase.from('chat_members').insert([
+                { chat_id: chatData.id, user_id: user.id }
+            ]);
+
+            if (memberError) throw memberError;
+
+            onSelectChat(chatData);
+            fetchChats();
+        } catch (err: any) {
+            console.error("Personal chat creation error:", err);
+            alert("Could not start personal chat: " + (err.message || "Please check your database permissions"));
         }
     };
 
     const handleSearchUsers = async (query: string) => {
         setSearch(query);
         if (!query.trim()) {
-            // If query is cleared, show the pre-fetched users again
-            const { data } = await supabase.from('users').select('*').limit(20);
-            if (data) setUsers(data.filter(u => u.id !== user.id));
+            setUsers([]);
             return;
         }
         try {
@@ -168,9 +189,9 @@ export default function Sidebar({ onSelectChat, selectedChatId, user }: SidebarP
 
             <div style={styles.contentArea}>
                 <div style={styles.header}>
-                    <h2 style={styles.headerTitle}>{showSearch ? "Search Users" : (activeTab.charAt(0).toUpperCase() + activeTab.slice(1))}</h2>
+                    <h2 style={styles.headerTitle}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h2>
                     <div style={styles.headerActions}>
-                        <button style={styles.iconBtn} onClick={toggleSearch}>{showSearch ? "✕" : "+"}</button>
+                        <button style={styles.iconBtn} onClick={openPersonalChat} title="New Chat">+</button>
                         <button style={styles.iconBtn} title="Logout" onClick={() => supabase.auth.signOut()}>⏻</button>
                     </div>
                 </div>
