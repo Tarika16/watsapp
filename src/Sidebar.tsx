@@ -48,9 +48,30 @@ export default function Sidebar({ onSelectChat, selectedChatId, user }: SidebarP
         if (data) setChats(data);
     };
 
+    const toggleSearch = async () => {
+        const newShowSearch = !showSearch;
+        setShowSearch(newShowSearch);
+        if (newShowSearch) {
+            setSearch('');
+            // Pre-fetch some users to show immediately
+            const { data } = await supabase
+                .from('users')
+                .select('*')
+                .limit(20);
+            if (data) setUsers(data.filter(u => u.id !== user.id));
+        } else {
+            setUsers([]);
+        }
+    };
+
     const handleSearchUsers = async (query: string) => {
         setSearch(query);
-        if (!query.trim()) { setUsers([]); return; }
+        if (!query.trim()) {
+            // If query is cleared, show the pre-fetched users again
+            const { data } = await supabase.from('users').select('*').limit(20);
+            if (data) setUsers(data.filter(u => u.id !== user.id));
+            return;
+        }
         try {
             // Search by name or email
             const { data, error } = await supabase
@@ -136,52 +157,12 @@ export default function Sidebar({ onSelectChat, selectedChatId, user }: SidebarP
         }
     };
 
-    const seedData = async () => {
-        try {
-            // Find another user
-            const { data: others } = await supabase.from('users').select('*').neq('id', user.id).limit(1);
-            if (!others || others.length === 0) return alert("Open another browser tab and use 'Auto Login 2' first to create a second user!");
-
-            const target = others[0];
-            alert(`Generating automated chat with ${target.name || target.email}...`);
-
-            // 1. Create chat
-            const { data: chatData } = await supabase.from('chats').insert([{ name: 'Automated Bot Chat', is_group: false }]).select().single();
-            if (!chatData) return;
-
-            // 2. Add members
-            await supabase.from('chat_members').insert([
-                { chat_id: chatData.id, user_id: user.id },
-                { chat_id: chatData.id, user_id: target.id }
-            ]);
-
-            // 3. Send random messages
-            const botMessages = [
-                "Hello! This is an automated test message.",
-                "The dark mode looks amazing, doesn't it?",
-                "Real-time database is working perfectly.",
-                "Type something back to test the interface!"
-            ];
-
-            for (const msg of botMessages) {
-                await supabase.from('messages').insert([
-                    { content: msg, sender_id: target.id, chat_id: chatData.id }
-                ]);
-            }
-
-            fetchChats();
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
     return (
         <div style={styles.sidebar}>
             <div style={styles.verticalTabs}>
                 <div style={styles.tabIcon} title="Chats" onClick={() => setActiveTab('chats')}>💬</div>
                 <div style={styles.tabIcon} title="Calls" onClick={() => setActiveTab('calls')}>📞</div>
                 <div style={styles.tabIcon} title="Status" onClick={() => setActiveTab('contacts')}>⭕</div>
-                <div style={styles.tabIcon} title="Seed Data" onClick={seedData}>🌱</div>
                 <div style={{ ...styles.tabIcon, marginTop: 'auto' }} onClick={() => supabase.auth.signOut()}>⏻</div>
             </div>
 
@@ -189,7 +170,7 @@ export default function Sidebar({ onSelectChat, selectedChatId, user }: SidebarP
                 <div style={styles.header}>
                     <h2 style={styles.headerTitle}>{showSearch ? "Search Users" : (activeTab.charAt(0).toUpperCase() + activeTab.slice(1))}</h2>
                     <div style={styles.headerActions}>
-                        <button style={styles.iconBtn} onClick={() => { setShowSearch(!showSearch); if (showSearch) setSearch(''); }}>{showSearch ? "✕" : "+"}</button>
+                        <button style={styles.iconBtn} onClick={toggleSearch}>{showSearch ? "✕" : "+"}</button>
                         <button style={styles.iconBtn} title="Logout" onClick={() => supabase.auth.signOut()}>⏻</button>
                     </div>
                 </div>
